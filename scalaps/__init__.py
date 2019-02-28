@@ -36,6 +36,10 @@ CallableTypes = Union[Callable, str, int]
 NoneType = type(None)
 
 
+def identity(x):
+    return x
+
+
 def get_callable(obj: CallableTypes) -> Callable[[Any], Any]:
     if callable(obj):
         return obj
@@ -123,6 +127,9 @@ class IterableMixin:
 
     def sort_by(self, rank_func_like: CallableTypes) -> 'ScList':
         return ScList(sorted(self, key=get_callable(rank_func_like)))
+
+    def sort(self):
+        return self.sort_by(identity)
 
 
 class ScSeq(IterableMixin):
