@@ -1,6 +1,10 @@
 # scalaps
 Scala-inspired data structures for Python
 
+See blog post, 
+[Introducing scalaps: Scala-inspired data structures for Python](https://medium.com/@matthagy/introducing-scalaps-scala-inspired-data-structures-for-python-53f3afc8696)
+for an introduction to this library.
+
 Example:
 ```python
 from scalaps import ScSeq
