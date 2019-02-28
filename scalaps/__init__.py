@@ -31,7 +31,7 @@ import operator
 import copy
 from functools import reduce
 from itertools import chain
-from collections import defaultdict, Counter
+from collections import defaultdict, Counter, deque
 from typing import Callable, Any, Union, Iterable
 
 __all__ = ['ScSeq', 'ScList', 'ScFrozenList', ]
@@ -94,11 +94,28 @@ class IterableMixin:
 
         return ScSeq(gen())
 
+    def last(self, n) -> 'ScSeq':
+        def gen():
+            d = deque()
+            for x in self:
+                d.append(x)
+                if len(d) > n:
+                    d.popleft()
+            yield from d
+
+        return ScSeq(gen())
+
     def filter(self, func_like: CallableTypes) -> 'ScSeq':
         return ScSeq(filter(get_callable(func_like), self))
 
     def chain(self, other) -> 'ScSeq':
         return ScSeq(chain(self, other))
+
+    def apply(self, func):
+        return get_callable(func)(self)
+
+    def apply_seq(self, func) -> 'ScSeq':
+        return ScSeq(self.apply(func))
 
     def fold(self, init_value: Any, func_like: CallableTypes):
         return reduce(get_callable(func_like), self, init_value)
@@ -144,7 +161,7 @@ class IterableMixin:
     def aggregate_by(self,
                      key: CallableTypes,
                      create_aggregate: CallableTypes,
-                     add_to_aggregate: CallableTypes) ->  'ScDict':
+                     add_to_aggregate: CallableTypes) -> 'ScDict':
         key = get_callable(key)
         create_aggregate = get_callable(create_aggregate)
         add_to_aggregate = get_callable(add_to_aggregate)
