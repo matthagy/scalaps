@@ -6,9 +6,9 @@ to learn about using this library.
 
 ## Example
 ```python
-import scalaps as sc
+from scalaps import ScSeq
 
-(sc.Seq(range(10))
+(ScSeq(range(10))
  .map(lambda x: x+3)
  .filter(lambda x: x%2==0)
  .group_by(lambda x: x%3)
@@ -18,9 +18,9 @@ import scalaps as sc
 
 #### Output
 ```
-(1, List([4, 10]))
-(0, List([6, 12]))
-(2, List([8]))
+(1, ScList([4, 10]))
+(0, ScList([6, 12]))
+(2, ScList([8]))
 ```
 
 ## Examples

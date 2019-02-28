@@ -8,7 +8,7 @@ https://towardsdatascience.com/interactively-exploring-reddit-posts-using-basic-
 import urllib.request
 from collections import namedtuple
 
-import scalaps as sc
+from scalaps import ScSeq
 
 with urllib.request.urlopen('https://matthagy.com/RS_2018-01-sample.csv') as response:
     text = response.read().decode()
@@ -25,7 +25,7 @@ def parse_post(line: str) -> Post:
     return Post(subreddit, author, title, int(score))
 
 
-posts = sc.Seq(text.strip().split('\n')).map(parse_post).to_frozen_list()
+posts = ScSeq(text.strip().split('\n')).map(parse_post).to_frozen_list()
 print(posts.length, 'posts')
 # > 11347 posts
 print()
