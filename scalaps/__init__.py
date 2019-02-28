@@ -1,11 +1,13 @@
 """
-Scalaps - Scala-inspired data structures for Python
+scalaps - Scala-inspired data structures for Python
 
-Currently a work in progress and improvements are much appreciated.
-Feel free to send a PR on GitHub.
+Also similar to Java streams
+
+Currently a work in progress and improvements are much appreciated
+Feel free to send a PR on GitHub
 """
 
-# Copyright 2018 Matt Hagy <matthew.hagy@gmail.com>
+# Copyright 2019 Matt Hagy <matthew.hagy@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the “Software”), to deal in
@@ -26,7 +28,9 @@ Feel free to send a PR on GitHub.
 
 
 import operator
+import copy
 from functools import reduce
+from itertools import chain
 from collections import defaultdict, Counter
 from typing import Callable, Any, Union, Iterable
 
@@ -93,13 +97,16 @@ class IterableMixin:
     def filter(self, func_like: CallableTypes) -> 'ScSeq':
         return ScSeq(filter(get_callable(func_like), self))
 
+    def chain(self, other) -> 'ScSeq':
+        return ScSeq(chain(self, other))
+
     def fold(self, init_value: Any, func_like: CallableTypes):
         return reduce(get_callable(func_like), self, init_value)
 
     def reduce(self, func_like: CallableTypes):
         return reduce(func_like, self)
 
-    def sum(self) -> int:
+    def sum(self):
         return sum(self)
 
     def count(self) -> int:
@@ -107,6 +114,15 @@ class IterableMixin:
 
     def value_counts(self) -> 'ScDict':
         return ScDict(Counter(self))
+
+    def sort_by(self, rank_func_like: CallableTypes) -> 'ScList':
+        return ScList(sorted(self, key=get_callable(rank_func_like)))
+
+    def sort(self) -> 'ScList':
+        return self.sort_by(identity)
+
+    def distinct(self) -> 'ScList':
+        return ScList(set(self))
 
     def group_by(self, key_func_like: CallableTypes) -> 'ScDict':
         key_func_like = get_callable(key_func_like)
@@ -125,11 +141,46 @@ class IterableMixin:
             d[k] = el
         return d
 
-    def sort_by(self, rank_func_like: CallableTypes) -> 'ScList':
-        return ScList(sorted(self, key=get_callable(rank_func_like)))
+    def aggregate_by(self,
+                     key: CallableTypes,
+                     create_aggregate: CallableTypes,
+                     add_to_aggregate: CallableTypes) ->  'ScDict':
+        key = get_callable(key)
+        create_aggregate = get_callable(create_aggregate)
+        add_to_aggregate = get_callable(add_to_aggregate)
 
-    def sort(self):
-        return self.sort_by(identity)
+        aggs_by_key = {}
+        for x in self:
+            k = key(x)
+            try:
+                agg = aggs_by_key[k]
+            except KeyError:
+                agg = aggs_by_key[k] = create_aggregate(x)
+            aggs_by_key[x] = add_to_aggregate(agg, x)
+
+        return ScDict(aggs_by_key)
+
+    def fold_by(self,
+                key: CallableTypes,
+                agg0,
+                add_to_aggregate: CallableTypes) -> 'ScDict':
+        return self.aggregate_by(key, lambda _: agg0, add_to_aggregate)
+
+    def reduce_by(self, key: CallableTypes, reducer: CallableTypes) -> 'ScDict':
+        key = get_callable(key)
+        reducer = get_callable(reducer)
+
+        existings_by_key = {}
+        for x in self:
+            k = key(x)
+            try:
+                existing = existings_by_key[k]
+            except KeyError:
+                existings_by_key[k] = x
+            else:
+                existings_by_key[k] = reducer(existing, x)
+
+        return ScDict(existings_by_key)
 
 
 class ScSeq(IterableMixin):
@@ -147,7 +198,12 @@ class ScSeq(IterableMixin):
         if self._ran:
             raise RuntimeError("Re-running sequence")
         self._ran = True
-        return iter(self._inner_seq)
+        try:
+            return iter(self._inner_seq)
+        finally:
+            # remove the reference so that we can free up sources in GCing
+            # while realizing the rest of the sequence of operations
+            del self._inner_seq
 
 
 class ListMixin:
@@ -176,15 +232,22 @@ class ScList(IterableMixin, ListMixin):
     """
 
     def __init__(self, l=()):
-        if not isinstance(l, list):
-            l = list(l)
-        super().__init__(l)
+        super().__init__(list(l) if not isinstance(l, list) else l)
 
     def to_list(self):
         return self
 
     def append(self, x):
         self._list.append(x)
+
+    def copy(self):
+        return ScList(list(self._l))
+
+    def __copy__(self):
+        return self.copy()
+
+    def __deepcopy__(self, memo=None):
+        return ScList(copy.deepcopy(x, memo=memo) for x in self._l)
 
 
 class ScFrozenList(IterableMixin, ListMixin):
