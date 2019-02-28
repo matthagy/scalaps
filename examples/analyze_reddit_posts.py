@@ -39,9 +39,9 @@ print()
 # Count the number of posts for each subreddit and show the five highest volume ones
 print('The five highest volume subreddits are:')
 (posts
- .group_by('subreddit')
+ .map('subreddit')
+ .value_counts()
  .items()
- .map(lambda t: (t[0], t[1].length))
  .sort_by(1)
  .reverse()
  .take(5)
