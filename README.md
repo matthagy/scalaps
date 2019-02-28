@@ -20,8 +20,9 @@ Output:
 (2, ScList([8]))
 ```
 
-Very much a work in progress. Expect major changes as the library evolves.
+See examples/ directory for additional examples of using scalaps. 
 
-I'd very match appreciate other people's input, so feel free to submit a PR.
+Very much a work in progress. Expect major changes as the library evolves.
+I'd appreciate other people's input, so feel free to submit a PR.
 
 Contact: Matt Hagy <matthew.hagy@gmail.com>
