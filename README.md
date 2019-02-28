@@ -26,6 +26,9 @@ from scalaps import ScSeq
 ## Examples
 See examples/ directory for additional examples of using scalaps. 
 
+Also see example usages in
+[career_village_entities](https://github.com/matthagy/career_village_entities).
+
 ## Closing Remarks
 Very much a work in progress. Expect major changes as the library evolves.
 I'd appreciate other people's input, so feel free to submit a PR.
