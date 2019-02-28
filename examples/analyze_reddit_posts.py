@@ -13,8 +13,8 @@ from scalaps import ScSeq
 with urllib.request.urlopen('https://matthagy.com/RS_2018-01-sample.csv') as response:
     text = response.read().decode()
 
-print(len(text), 'bytes')
-# > 933177 bytes
+print(len(text), 'characters')
+# > 933177 characters
 print()
 
 Post = namedtuple('Post', ['subreddit', 'author', 'title', 'score'])
