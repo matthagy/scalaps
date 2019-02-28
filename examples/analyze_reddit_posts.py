@@ -29,6 +29,13 @@ posts = ScSeq(text.strip().split('\n')).map(parse_post).to_frozen_list()
 print(posts.length, 'posts')
 # > 11347 posts
 print()
+posts.take(5).for_each(lambda x: print(str(x)[:100]))
+# > Post(subreddit='MarioAI', author='nicolasrene', title='recreation of Mario facing left since i haven
+# > Post(subreddit='u_seksualios', author='seksualios', title='Seksuali gundanti ištvirkėlė Alektra Blue
+# > Post(subreddit='Cuphead', author='[deleted]', title='Just finished Cuphead in an hour and fifteen mi
+# > Post(subreddit='videos', author='lonemonk', title='Trump On The Traps - Calvin Dick (2017)', score=1
+# > Post(subreddit='CryptoCurrency', author='Pseudoname87', title='Why does binance show a different pri
+
 
 # Count the number of posts in AskReddit
 n_ask_reddit = posts.filter(lambda p: p.subreddit == 'AskReddit').count()
