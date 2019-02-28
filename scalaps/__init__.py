@@ -34,7 +34,9 @@ from itertools import chain
 from collections import defaultdict, Counter, deque
 from typing import Callable, Any, Union, Iterable
 
-__all__ = ['ScSeq', 'ScList', 'ScFrozenList', ]
+# prefer importing the model as
+# > import scalas as sc
+__all__ = ['Seq', 'List', 'FrozenList', 'Dict']
 
 CallableTypes = Union[Callable, str, int]
 NoneType = type(None)
@@ -58,31 +60,34 @@ def get_callable(obj: CallableTypes) -> Callable[[Any], Any]:
 class IterableMixin:
     """Adds some useful Scala-inspired methods for working with iterables"""
 
-    def to_list(self) -> 'ScList':
-        return ScList(self)
+    def __iter__(self):
+        raise RuntimeError(f"__iter__ not overridden in {self.__class__.__name__}")
 
-    def to_frozen_list(self) -> 'ScFrozenList':
-        return ScFrozenList(self)
+    def to_list(self) -> 'List':
+        return List(self)
 
-    def to_dict(self) -> 'ScDict':
-        return ScDict(self)
+    def to_frozen_list(self) -> 'FrozenList':
+        return FrozenList(self)
 
-    def map(self, func_like: CallableTypes) -> 'ScSeq':
-        return ScSeq(map(get_callable(func_like), self))
+    def to_dict(self) -> 'Dict':
+        return Dict(self)
 
-    def flat_map(self, func_like: CallableTypes) -> 'ScSeq':
+    def map(self, func_like: CallableTypes) -> 'Seq':
+        return Seq(map(get_callable(func_like), self))
+
+    def flat_map(self, func_like: CallableTypes) -> 'Seq':
         func = get_callable(func_like)
-        return ScSeq(y for x in self for y in func(x))
+        return Seq(y for x in self for y in func(x))
 
     def for_each(self, func_like: CallableTypes):
         func = get_callable(func_like)
         for x in self:
             func(x)
 
-    def take(self, n) -> 'ScSeq':
-        return ScSeq(x for _, x in zip(range(n), self))
+    def take(self, n) -> 'Seq':
+        return Seq(x for _, x in zip(range(n), self))
 
-    def drop(self, n) -> 'ScSeq':
+    def drop(self, n) -> 'Seq':
         def gen():
             i = iter(self)
             try:
@@ -92,9 +97,9 @@ class IterableMixin:
                 pass
             yield from i
 
-        return ScSeq(gen())
+        return Seq(gen())
 
-    def last(self, n) -> 'ScSeq':
+    def last(self, n) -> 'Seq':
         def gen():
             d = deque()
             for x in self:
@@ -103,19 +108,19 @@ class IterableMixin:
                     d.popleft()
             yield from d
 
-        return ScSeq(gen())
+        return Seq(gen())
 
-    def filter(self, func_like: CallableTypes) -> 'ScSeq':
-        return ScSeq(filter(get_callable(func_like), self))
+    def filter(self, func_like: CallableTypes) -> 'Seq':
+        return Seq(filter(get_callable(func_like), self))
 
-    def chain(self, other) -> 'ScSeq':
-        return ScSeq(chain(self, other))
+    def chain(self, other) -> 'Seq':
+        return Seq(chain(self, other))
 
     def apply(self, func):
         return get_callable(func)(self)
 
-    def apply_seq(self, func) -> 'ScSeq':
-        return ScSeq(self.apply(func))
+    def apply_seq(self, func) -> 'Seq':
+        return Seq(self.apply(func))
 
     def fold(self, init_value: Any, func_like: CallableTypes):
         return reduce(get_callable(func_like), self, init_value)
@@ -129,28 +134,28 @@ class IterableMixin:
     def count(self) -> int:
         return sum(1 for _ in self)
 
-    def value_counts(self) -> 'ScDict':
-        return ScDict(Counter(self))
+    def value_counts(self) -> 'Dict':
+        return Dict(Counter(self))
 
-    def sort_by(self, rank_func_like: CallableTypes) -> 'ScList':
-        return ScList(sorted(self, key=get_callable(rank_func_like)))
+    def sort_by(self, rank_func_like: CallableTypes) -> 'List':
+        return List(sorted(self, key=get_callable(rank_func_like)))
 
-    def sort(self) -> 'ScList':
+    def sort(self) -> 'List':
         return self.sort_by(identity)
 
-    def distinct(self) -> 'ScList':
-        return ScList(set(self))
+    def distinct(self) -> 'List':
+        return List(set(self))
 
-    def group_by(self, key_func_like: CallableTypes) -> 'ScDict':
+    def group_by(self, key_func_like: CallableTypes) -> 'Dict':
         key_func_like = get_callable(key_func_like)
-        d = defaultdict(ScList)
+        d = defaultdict(List)
         for el in self:
             d[key_func_like(el)].append(el)
-        return ScDict(d)
+        return Dict(d)
 
-    def key_by(self, key_func_like: CallableTypes) -> 'ScDict':
+    def key_by(self, key_func_like: CallableTypes) -> 'Dict':
         key_func_like = get_callable(key_func_like)
-        d = ScDict()
+        d = Dict()
         for el in self:
             k = key_func_like(el)
             if k in d:
@@ -161,7 +166,7 @@ class IterableMixin:
     def aggregate_by(self,
                      key: CallableTypes,
                      create_aggregate: CallableTypes,
-                     add_to_aggregate: CallableTypes) -> 'ScDict':
+                     add_to_aggregate: CallableTypes) -> 'Dict':
         key = get_callable(key)
         create_aggregate = get_callable(create_aggregate)
         add_to_aggregate = get_callable(add_to_aggregate)
@@ -175,15 +180,15 @@ class IterableMixin:
                 agg = aggs_by_key[k] = create_aggregate(x)
             aggs_by_key[x] = add_to_aggregate(agg, x)
 
-        return ScDict(aggs_by_key)
+        return Dict(aggs_by_key)
 
     def fold_by(self,
                 key: CallableTypes,
                 agg0,
-                add_to_aggregate: CallableTypes) -> 'ScDict':
+                add_to_aggregate: CallableTypes) -> 'Dict':
         return self.aggregate_by(key, lambda _: agg0, add_to_aggregate)
 
-    def reduce_by(self, key: CallableTypes, reducer: CallableTypes) -> 'ScDict':
+    def reduce_by(self, key: CallableTypes, reducer: CallableTypes) -> 'Dict':
         key = get_callable(key)
         reducer = get_callable(reducer)
 
@@ -197,13 +202,15 @@ class IterableMixin:
             else:
                 existings_by_key[k] = reducer(existing, x)
 
-        return ScDict(existings_by_key)
+        return Dict(existings_by_key)
 
 
-class ScSeq(IterableMixin):
+class Seq(IterableMixin):
     """
-    Wrapper around arbitrary sequences. Assumes sequences are single pass and can't be iterated
-    over multiple times. Use `ScList` for realized sequences that can be iterated over multiple
+    Wrapper around arbitrary sequences.`ScSeq` instances are single pass and can't be realized
+    over multiple times. Use `ScList` for realized sequences that can be iterated over multiple.
+    Alternatively, write a function that builds the sequence so that you can create multiple
+    sequences and realize each one. See examples/seq_func.py for an example of this.
     times.
     """
 
@@ -222,8 +229,24 @@ class ScSeq(IterableMixin):
             # while realizing the rest of the sequence of operations
             del self._inner_seq
 
+    def reverse(self):
+        if self._ran:
+            raise RuntimeError("Reversing a sequence that has already been ran")
+        try:
+            r = reversed(self._inner_seq)
+        except TypeError:
+            raise RuntimeError(f"Can't reverse {self._inner_seq!r}. "
+                               "Instead you can realize the sequence as .to_list() "
+                               "and then reverse that.")
+        return Seq(r)
+        # Note, we're specifically not marking the self ScSeq as _ran.
+        # This is because all reversable iterables can be ran multiple times.
+        # Hence we can run both the ScSeq instances independently.
+        # Still respect the contract that individual ScSeq instances can't be
+        # ran multiple times.
 
-class ListMixin:
+
+class BaseList:
     def __init__(self, l=()):
         self._list = l
 
@@ -231,8 +254,8 @@ class ListMixin:
     def length(self):
         return len(self._list)
 
-    def reverse(self) -> ScSeq:
-        return ScSeq(reversed(self._list))
+    def reverse(self) -> Seq:
+        return Seq(reversed(self._list))
 
     def __iter__(self):
         return iter(self._list)
@@ -241,7 +264,7 @@ class ListMixin:
         return f'{self.__class__.__name__}({self._list!r})'
 
 
-class ScList(IterableMixin, ListMixin):
+class List(BaseList, IterableMixin):
     """
     Wrapper around Python lists with a more Scala-esque API
 
@@ -258,16 +281,16 @@ class ScList(IterableMixin, ListMixin):
         self._list.append(x)
 
     def copy(self):
-        return ScList(list(self._l))
+        return List(list(self._l))
 
     def __copy__(self):
         return self.copy()
 
     def __deepcopy__(self, memo=None):
-        return ScList(copy.deepcopy(x, memo=memo) for x in self._l)
+        return List(copy.deepcopy(x, memo=memo) for x in self._l)
 
 
-class ScFrozenList(IterableMixin, ListMixin):
+class FrozenList(BaseList, IterableMixin):
     """
     Immutable wrapper around Python lists
     """
@@ -281,7 +304,7 @@ class ScFrozenList(IterableMixin, ListMixin):
         return self
 
 
-class ScDict(dict):
+class Dict(dict):
     """
     Extension of Python dict
     """
@@ -291,29 +314,29 @@ class ScDict(dict):
         return len(self)
 
     def keys(self):
-        return ScSeq(super().keys())
+        return Seq(super().keys())
 
     def values(self):
-        return ScSeq(super().values())
+        return Seq(super().values())
 
     def items(self):
-        return ScSeq(super().items())
+        return Seq(super().items())
 
-    def map_values(self, func_like: CallableTypes) -> 'ScDict':
+    def map_values(self, func_like: CallableTypes) -> 'Dict':
         func = get_callable(func_like)
-        return ScDict({k: func(v) for k, v in self.items()})
+        return Dict({k: func(v) for k, v in self.items()})
 
-    def union(self, other: Union['ScDict', dict], error_on_overlap=False):
+    def union(self, other: Union['Dict', dict], error_on_overlap=False):
         if error_on_overlap:
             common_keys = set(self.keys()) & set(other.keys())
             if common_keys:
                 raise ValueError(f"there are {len(common_keys)} in common when non were expected")
 
-        cp = ScDict(self)
+        cp = Dict(self)
         cp.update(other)
         return cp
 
-    def join(self, other: 'ScDict', how='inner'):
+    def join(self, other: 'Dict', how='inner'):
         if how == 'inner':
             keys = set(self.keys()) & set(other.keys())
         elif how == 'outer':
@@ -329,4 +352,4 @@ class ScDict(dict):
             for key in keys:
                 yield key, (self.get(key), other.get(key))
 
-        return ScSeq(gen())
+        return Seq(gen())

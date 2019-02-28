@@ -2,11 +2,11 @@
 Example of reconstructing a lazy sequence so that we can realize it multiple times
 """
 
-from scalaps import ScSeq
+import scalaps as sc
 
 
 def create_seq():
-    return (ScSeq(range(1000))
+    return (sc.Seq(range(1000))
             .map(lambda x: x * 10)
             .filter(lambda x: x % 70 == 0)
             .flat_map(lambda x: range(x)))
