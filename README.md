@@ -2,7 +2,7 @@
 See blog post, 
 [Introducing scalaps: Scala-inspired data structures for Python](https://medium.com/@matthagy/introducing-scalaps-scala-inspired-data-structures-for-python-53f3afc8696)
 to learn about using this library.
-> A functional, object-oriented approach for working with sequences and collections. Also similar to Java Streams. Hope you find they simplify your code by providing a plethora of common algorithms for working with sequences and collections.
+> A functional, object-oriented approach for working with sequences and collections. Also similar to Spark RDDs and Java Streams. Hope you find they simplify your code by providing a plethora of common algorithms for working with sequences and collections.
 
 ## Example
 ```python
