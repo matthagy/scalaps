@@ -27,11 +27,10 @@ Feel free to send a PR on GitHub.
 
 import operator
 from functools import reduce
-from collections import defaultdict
+from collections import defaultdict, Counter
 from typing import Callable, Any, Union, Iterable
 
 __all__ = ['ScSeq', 'ScList', 'ScFrozenList', ]
-
 
 CallableTypes = Union[Callable, str, int]
 NoneType = type(None)
@@ -56,6 +55,9 @@ class IterableMixin:
 
     def to_frozen_list(self) -> 'ScFrozenList':
         return ScFrozenList(self)
+
+    def to_dict(self) -> 'ScDict':
+        return ScDict(self)
 
     def map(self, func_like: CallableTypes) -> 'ScSeq':
         return ScSeq(map(get_callable(func_like), self))
@@ -93,6 +95,15 @@ class IterableMixin:
     def reduce(self, func_like: CallableTypes):
         return reduce(func_like, self)
 
+    def sum(self) -> int:
+        return sum(self)
+
+    def count(self) -> int:
+        return sum(1 for _ in self)
+
+    def value_counts(self) -> 'ScDict':
+        return ScDict(Counter(self))
+
     def group_by(self, key_func_like: CallableTypes) -> 'ScDict':
         key_func_like = get_callable(key_func_like)
         d = defaultdict(ScList)
@@ -120,6 +131,7 @@ class ScSeq(IterableMixin):
     over multiple times. Use `ScList` for realized sequences that can be iterated over multiple
     times.
     """
+
     def __init__(self, inner_seq: Iterable):
         self._inner_seq = inner_seq
         self._ran = False
@@ -132,9 +144,15 @@ class ScSeq(IterableMixin):
 
 
 class ListMixin:
+    def __init__(self, l=()):
+        self._list = l
+
     @property
     def length(self):
         return len(self._list)
+
+    def reverse(self) -> ScSeq:
+        return ScSeq(reversed(self._list))
 
     def __iter__(self):
         return iter(self._list)
@@ -149,10 +167,11 @@ class ScList(IterableMixin, ListMixin):
 
     TODO: Add more modification methods beyond append
     """
+
     def __init__(self, l=()):
         if not isinstance(l, list):
             l = list(l)
-        self._list = l
+        super().__init__(l)
 
     def to_list(self):
         return self
@@ -165,10 +184,11 @@ class ScFrozenList(IterableMixin, ListMixin):
     """
     Immutable wrapper around Python lists
     """
+
     def __init__(self, l):
         if not isinstance(l, tuple):
             l = tuple(l)
-        self._list = l
+        super().__init__(l)
 
     def to_frozen_list(self):
         return self
@@ -178,6 +198,11 @@ class ScDict(dict):
     """
     Extension of Python dict
     """
+
+    @property
+    def length(self):
+        return len(self)
+
     def keys(self):
         return ScSeq(super().keys())
 
@@ -186,6 +211,10 @@ class ScDict(dict):
 
     def items(self):
         return ScSeq(super().items())
+
+    def map_values(self, func_like: CallableTypes) -> 'ScDict':
+        func = get_callable(func_like)
+        return ScDict({k: func(v) for k, v in self.items()})
 
     def union(self, other: Union['ScDict', dict], error_on_overlap=False):
         if error_on_overlap:
@@ -212,5 +241,5 @@ class ScDict(dict):
         def gen():
             for key in keys:
                 yield key, (self.get(key), other.get(key))
-        return ScSeq(gen())
 
+        return ScSeq(gen())
