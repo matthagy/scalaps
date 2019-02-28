@@ -25,7 +25,7 @@ with open("README.md", "r") as fh:
 setup(
     name="scalaps",
     description="Scala-inspired data structures for Python",
-    version="0.0.1",
+    version="0.0.3",
     author="Matt Hagy",
     author_email="matthew.hagy@gmail.com",
     long_description=long_description,
