@@ -199,6 +199,12 @@ class IterableMixin:
 
         return ScDict(existings_by_key)
 
+    def enumerate(self):
+        return Seq(enumerate(self))
+
+    def mkstring(self, between, before='',after=''):
+        return '%s%s%s' %(before,between.join(self),after)
+
 
 class ScSeq(IterableMixin):
     """
